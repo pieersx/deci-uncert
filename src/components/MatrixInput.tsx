@@ -26,7 +26,8 @@ const MatrixInput: React.FC<MatrixInputProps> = ({
       values: [
         [0, 0],
         [0, 0]
-      ]
+      ],
+      isCost: false
     }
   );
 
@@ -137,9 +138,31 @@ const MatrixInput: React.FC<MatrixInputProps> = ({
     });
   };
 
+  const toggleCostProfit = () => {
+    setMatrix({
+      ...matrix,
+      isCost: !matrix.isCost
+    });
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Matriz de decisión</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Matriz de decisión</h2>
+        <div className="flex items-center space-x-2">
+          <span className="text-gray-700">Tipo de datos:</span>
+          <button
+            onClick={toggleCostProfit}
+            className={`px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
+              matrix.isCost
+                ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                : 'bg-green-100 text-green-800 hover:bg-green-200'
+            }`}
+          >
+            {matrix.isCost ? 'Costos' : 'Ganancias'}
+          </button>
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">

@@ -2,49 +2,71 @@ import { CriterionResult, DecisionResults, PayoffMatrix } from "../types";
 
 /**
  * Calculates the Maximin criterion (Wald)
- * Selects the alternative with the best worst-case outcome
+ * For profits: Selects the alternative with the best worst-case outcome
+ * For costs: Selects the alternative with the lowest maximum cost
  */
 export const calculateMaximin = (matrix: PayoffMatrix): CriterionResult => {
-  const { values } = matrix;
-  const minValues = values.map(row => Math.min(...row));
-  const optimalIndex = minValues.indexOf(Math.max(...minValues));
+  const { values, isCost } = matrix;
+
+  // Para costos, buscamos minimizar el máximo
+  // Para ganancias, buscamos maximizar el mínimo
+  const relevantValues = isCost
+    ? values.map(row => Math.max(...row)) // Para costos, encontramos el máximo de cada fila
+    : values.map(row => Math.min(...row)); // Para ganancias, encontramos el mínimo de cada fila
+
+  const optimalIndex = isCost
+    ? relevantValues.indexOf(Math.min(...relevantValues)) // Para costos, minimizamos
+    : relevantValues.indexOf(Math.max(...relevantValues)); // Para ganancias, maximizamos
 
   const calculations = values.map((row, index) => {
-    const min = Math.min(...row);
-    return `Alternative ${index + 1}: min{${row.join(", ")}} = ${min}`;
+    const value = isCost ? Math.max(...row) : Math.min(...row);
+    return `Alternative ${index + 1}: ${isCost ? 'max' : 'min'}{${row.join(", ")}} = ${value}`;
   });
 
   return {
-    name: "Pesimista (Wald)",
-    description: "Selecciona la alternativa con el mejor resultado en el peor de los casos.",
+    name: "Pesimista (Maximin)",
+    description: isCost
+      ? "Selecciona la alternativa con el menor costo máximo"
+      : "Selecciona la alternativa con la mejor ganancia mínima",
     calculations,
-    values: minValues,
+    values: relevantValues,
     optimalIndex,
-    optimalValue: minValues[optimalIndex]
+    optimalValue: relevantValues[optimalIndex]
   };
 };
 
 /**
  * Calculates the Maximax criterion
- * Selects the alternative with the best best-case outcome
+ * For profits: Selects the alternative with the best best-case outcome
+ * For costs: Selects the alternative with the lowest minimum cost
  */
 export const calculateMaximax = (matrix: PayoffMatrix): CriterionResult => {
-  const { values } = matrix;
-  const maxValues = values.map(row => Math.max(...row));
-  const optimalIndex = maxValues.indexOf(Math.max(...maxValues));
+  const { values, isCost } = matrix;
+
+  // Para costos, buscamos minimizar el mínimo
+  // Para ganancias, buscamos maximizar el máximo
+  const relevantValues = isCost
+    ? values.map(row => Math.min(...row)) // Para costos, encontramos el mínimo de cada fila
+    : values.map(row => Math.max(...row)); // Para ganancias, encontramos el máximo de cada fila
+
+  const optimalIndex = isCost
+    ? relevantValues.indexOf(Math.min(...relevantValues)) // Para costos, minimizamos
+    : relevantValues.indexOf(Math.max(...relevantValues)); // Para ganancias, maximizamos
 
   const calculations = values.map((row, index) => {
-    const max = Math.max(...row);
-    return `Alternative ${index + 1}: max{${row.join(", ")}} = ${max}`;
+    const value = isCost ? Math.min(...row) : Math.max(...row);
+    return `Alternative ${index + 1}: ${isCost ? 'min' : 'max'}{${row.join(", ")}} = ${value}`;
   });
 
   return {
-    name: "Optimista",
-    description: "Selecciona la alternativa con el mejor resultado posible",
+    name: "Optimista (Maximax)",
+    description: isCost
+      ? "Selecciona la alternativa con el menor costo mínimo"
+      : "Selecciona la alternativa con la mejor ganancia máxima",
     calculations,
-    values: maxValues,
+    values: relevantValues,
     optimalIndex,
-    optimalValue: maxValues[optimalIndex]
+    optimalValue: relevantValues[optimalIndex]
   };
 };
 
@@ -53,25 +75,37 @@ export const calculateMaximax = (matrix: PayoffMatrix): CriterionResult => {
  * Weighted average of best and worst outcomes based on optimism coefficient
  */
 export const calculateHurwicz = (matrix: PayoffMatrix, alpha: number = 0.5): CriterionResult => {
-  const { values } = matrix;
+  const { values, isCost } = matrix;
   const hurwiczValues = values.map(row => {
     const min = Math.min(...row);
     const max = Math.max(...row);
-    return alpha * max + (1 - alpha) * min;
+    // Para costos, invertimos el coeficiente de optimismo
+    return isCost
+      ? alpha * min + (1 - alpha) * max // Para costos
+      : alpha * max + (1 - alpha) * min; // Para ganancias
   });
 
-  const optimalIndex = hurwiczValues.indexOf(Math.max(...hurwiczValues));
+  const optimalIndex = isCost
+    ? hurwiczValues.indexOf(Math.min(...hurwiczValues))
+    : hurwiczValues.indexOf(Math.max(...hurwiczValues));
 
   const calculations = values.map((row, index) => {
     const min = Math.min(...row);
     const max = Math.max(...row);
-    const value = alpha * max + (1 - alpha) * min;
-    return `Alternative ${index + 1}: ${alpha.toFixed(2)} × max{${row.join(", ")}} + ${(1 - alpha).toFixed(2)} × min{${row.join(", ")}} = ${alpha.toFixed(2)} × ${max} + ${(1 - alpha).toFixed(2)} × ${min} = ${value.toFixed(2)}`;
+    const value = isCost
+      ? alpha * min + (1 - alpha) * max
+      : alpha * max + (1 - alpha) * min;
+    return `Alternative ${index + 1}: ${isCost ?
+      `${alpha.toFixed(2)} × min{${row.join(", ")}} + ${(1 - alpha).toFixed(2)} × max{${row.join(", ")}} = ${alpha.toFixed(2)} × ${min} + ${(1 - alpha).toFixed(2)} × ${max}` :
+      `${alpha.toFixed(2)} × max{${row.join(", ")}} + ${(1 - alpha).toFixed(2)} × min{${row.join(", ")}} = ${alpha.toFixed(2)} × ${max} + ${(1 - alpha).toFixed(2)} × ${min}`
+    } = ${value.toFixed(2)}`;
   });
 
   return {
     name: "Hurwicz (α=" + alpha.toFixed(2) + ")",
-    description: `Promedio ponderado de los mejores y peores resultados con coeficiente de optimismo α=${alpha.toFixed(2)}`,
+    description: isCost
+      ? `Promedio ponderado del mejor y peor costo con coeficiente de optimismo α=${alpha.toFixed(2)}`
+      : `Promedio ponderado de la mejor y peor ganancia con coeficiente de optimismo α=${alpha.toFixed(2)}`,
     calculations,
     values: hurwiczValues,
     optimalIndex,
@@ -84,13 +118,15 @@ export const calculateHurwicz = (matrix: PayoffMatrix, alpha: number = 0.5): Cri
  * Assumes all states are equally likely
  */
 export const calculateLaplace = (matrix: PayoffMatrix): CriterionResult => {
-  const { values } = matrix;
+  const { values, isCost } = matrix;
   const numStates = matrix.states.length;
   const laplaceValues = values.map(row =>
     row.reduce((sum, value) => sum + value, 0) / numStates
   );
 
-  const optimalIndex = laplaceValues.indexOf(Math.max(...laplaceValues));
+  const optimalIndex = isCost
+    ? laplaceValues.indexOf(Math.min(...laplaceValues))
+    : laplaceValues.indexOf(Math.max(...laplaceValues));
 
   const calculations = values.map((row, index) => {
     const avg = row.reduce((sum, value) => sum + value, 0) / numStates;
@@ -99,7 +135,9 @@ export const calculateLaplace = (matrix: PayoffMatrix): CriterionResult => {
 
   return {
     name: "Laplace",
-    description: "Supone que todos los estados tienen la misma probabilidad",
+    description: isCost
+      ? "Asume que todos los estados son igualmente probables (minimiza el costo promedio)"
+      : "Asume que todos los estados son igualmente probables (maximiza la ganancia promedio)",
     calculations,
     values: laplaceValues,
     optimalIndex,
@@ -111,21 +149,25 @@ export const calculateLaplace = (matrix: PayoffMatrix): CriterionResult => {
  * Calculates the regret (opportunity loss) matrix
  */
 export const calculateRegretMatrix = (matrix: PayoffMatrix): number[][] => {
-  const { values } = matrix;
+  const { values, isCost } = matrix;
   const numStates = matrix.states.length;
   const regretMatrix: number[][] = [];
 
-  // For each state, find the maximum value
-  const maxPerState = Array(numStates).fill(0);
+  // Para cada estado, encontrar el valor óptimo
+  const optimalPerState = Array(numStates).fill(0);
   for (let j = 0; j < numStates; j++) {
-    maxPerState[j] = Math.max(...values.map(row => row[j]));
+    optimalPerState[j] = isCost
+      ? Math.min(...values.map(row => row[j])) // Para costos, el mínimo es óptimo
+      : Math.max(...values.map(row => row[j])); // Para ganancias, el máximo es óptimo
   }
 
-  // Calculate regret for each alternative and state
+  // Calcular el arrepentimiento para cada alternativa y estado
   for (let i = 0; i < values.length; i++) {
     regretMatrix[i] = [];
     for (let j = 0; j < numStates; j++) {
-      regretMatrix[i][j] = maxPerState[j] - values[i][j];
+      regretMatrix[i][j] = isCost
+        ? values[i][j] - optimalPerState[j] // Para costos
+        : optimalPerState[j] - values[i][j]; // Para ganancias
     }
   }
 
@@ -148,7 +190,9 @@ export const calculateMinimaxRegret = (matrix: PayoffMatrix): CriterionResult =>
 
   return {
     name: "Savage",
-    description: "Minimiza el arrepentimiento máximo (pérdida de oportunidad)",
+    description: matrix.isCost
+      ? "Minimiza el máximo arrepentimiento (diferencia de costo respecto al óptimo)"
+      : "Minimiza el máximo arrepentimiento (pérdida de oportunidad)",
     calculations,
     values: maxRegrets,
     optimalIndex,
@@ -178,42 +222,44 @@ export const calculateAllCriteria = (matrix: PayoffMatrix, alpha: number = 0.5):
 /**
  * Example decision matrices from class exercises
  */
-export const exampleMatrices: {[key: string]: PayoffMatrix} = {
-  example1: {
-    alternatives: [
-      { id: "a1", name: "Alternativa 1" },
-      { id: "a2", name: "Alternativa 2" },
-      { id: "a3", name: "Alternativa 3" }
-    ],
-    states: [
-      { id: "s1", name: "Estado 1" },
-      { id: "s2", name: "Estado 2" },
-      { id: "s3", name: "Estado 3" },
-      { id: "s4", name: "Estado 4" }
-    ],
-    values: [
-      [3, 8, 2, 10],
-      [5, 4, 6, 3],
-      [9, 6, 4, 5]
-    ]
-  },
-  example2: {
-    alternatives: [
-      { id: "a1", name: "Alternativa 1" },
-      { id: "a2", name: "Alternativa 2" },
-      { id: "a3", name: "Alternativa 3" },
-      { id: "a4", name: "Alternativa 4" }
-    ],
-    states: [
-      { id: "s1", name: "Estado 1" },
-      { id: "s2", name: "Estado 2" },
-      { id: "s3", name: "Estado 3" }
-    ],
-    values: [
-      [10, 4, 7],
-      [5, 8, 6],
-      [8, 5, 4],
-      [6, 7, 9]
-    ]
-  }
-};
+// export const exampleMatrices: {[key: string]: PayoffMatrix} = {
+//   example1: {
+//     alternatives: [
+//       { id: "a1", name: "Alternative 1" },
+//       { id: "a2", name: "Alternative 2" },
+//       { id: "a3", name: "Alternative 3" }
+//     ],
+//     states: [
+//       { id: "s1", name: "State 1" },
+//       { id: "s2", name: "State 2" },
+//       { id: "s3", name: "State 3" },
+//       { id: "s4", name: "State 4" }
+//     ],
+//     values: [
+//       [3, 8, 2, 10],
+//       [5, 4, 6, 3],
+//       [9, 6, 4, 5]
+//     ],
+//     isCost: false
+//   },
+//   example2: {
+//     alternatives: [
+//       { id: "a1", name: "Alternative 1" },
+//       { id: "a2", name: "Alternative 2" },
+//       { id: "a3", name: "Alternative 3" },
+//       { id: "a4", name: "Alternative 4" }
+//     ],
+//     states: [
+//       { id: "s1", name: "State 1" },
+//       { id: "s2", name: "State 2" },
+//       { id: "s3", name: "State 3" }
+//     ],
+//     values: [
+//       [10, 4, 7],
+//       [5, 8, 6],
+//       [8, 5, 4],
+//       [6, 7, 9]
+//     ],
+//     isCost: false
+//   }
+// };

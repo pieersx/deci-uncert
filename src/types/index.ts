@@ -11,7 +11,8 @@ export interface State {
 export interface PayoffMatrix {
   alternatives: Alternative[];
   states: State[];
-  values: number[][]; // [alternativeIndex][stateIndex]
+  values: number[][];
+  isCost: boolean; // true para costos, false para ganancias
 }
 
 export interface CriterionResult {

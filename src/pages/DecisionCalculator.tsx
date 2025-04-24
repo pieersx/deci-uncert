@@ -5,7 +5,7 @@ import HurwiczAlphaSlider from "../components/HurwiczAlphaSlider";
 import MatrixInput from "../components/MatrixInput";
 import ResultsDisplay from "../components/ResultsDisplay";
 import { DecisionResults, PayoffMatrix } from "../types";
-import { calculateAllCriteria, exampleMatrices } from "../utils/decisionCriteria";
+import { calculateAllCriteria } from "../utils/decisionCriteria";
 
 const DecisionCalculator: React.FC = () => {
   const [matrix, setMatrix] = useState<PayoffMatrix | null>(null);
@@ -25,12 +25,12 @@ const DecisionCalculator: React.FC = () => {
     }
   };
 
-  const handleSelectExample = (exampleKey: string) => {
-    if (exampleMatrices[exampleKey]) {
-      setMatrix(exampleMatrices[exampleKey]);
-      setShowResults(false);
-    }
-  };
+  // const handleSelectExample = (exampleKey: string) => {
+  //   if [exampleKey]) {
+  //     setMatrix[exampleKey]);
+  //     setShowResults(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gray-100">
