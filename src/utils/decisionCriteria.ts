@@ -24,7 +24,7 @@ export const calculateMaximin = (matrix: PayoffMatrix): CriterionResult => {
   });
 
   return {
-    name: `Pesimista ${isCost ? "(Maximin)" : "(Minimax)"}`,
+    name: `Pesimista ${isCost ? "(Minimax)" : "(Maximin)"}`,
     description: isCost
       ? "Selecciona la alternativa con el menor costo máximo"
       : "Selecciona la alternativa con la mejor ganancia mínima",
