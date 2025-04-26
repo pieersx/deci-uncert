@@ -59,7 +59,7 @@ export const calculateMaximax = (matrix: PayoffMatrix): CriterionResult => {
   });
 
   return {
-    name: `Optimista ${isCost ? "(Minimix)" : "(Maximax)"}`,
+    name: `Optimista ${isCost ? "(Minimin)" : "(Maximax)"}`,
     description: isCost
       ? "Selecciona la alternativa con el menor costo mínimo"
       : "Selecciona la alternativa con la mejor ganancia máxima",
